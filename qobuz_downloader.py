@@ -1,23 +1,77 @@
 import logging
 from qobuz_dl.core import QobuzDL
-from qobuz_dl.utils import create_and_return_dir
+from qobuz_dl.utils import create_and_return_dir, get_url_info
+from qobuz_dl.exceptions import AuthenticationError, IneligibleError
 from dotenv import dotenv_values, set_key
+import os
 
-logging.basicConfig(level=logging.INFO)
+offline_testing = False
+
 
 env = dotenv_values(".env")
 email = env["email"]
 password = env["password"]
 
-qobuz = QobuzDL(folder_format="{year} - {album}",
+authenticated = False
+
+qobuz = QobuzDL(directory="stage",
+                folder_format="{artist}/{year} - {album}",
                 track_format="{tracknumber} - {tracktitle}",
                 embed_art=True,
-                overwrite=True)
+                cleanup_cover=True)
 
 qobuz.get_tokens() # get 'app_id' and 'secrets' attrs
-qobuz.initialize_client(email, password, qobuz.app_id, qobuz.secrets)
+#qobuz.initialize_client(email, password, qobuz.app_id, qobuz.secrets)
+  
 
 
+def authenticate(email=email, password=password):
+    if offline_testing:
+        if email=="valid" and password=="valid":
+            return True
+        else:
+            return False
+    
+    global authenticated
+    try:
+        qobuz.initialize_client(email, password, qobuz.app_id, qobuz.secrets)
+        authenticated = True
+    except (AuthenticationError, IneligibleError) as e:
+        pass
+    return authenticated
+
+
+def check_auth(func):
+    def wrapper(*args, **kwargs):
+        if not authenticated:
+            #if authenticate():
+            #    return func(*args, **kwargs)
+            #else:
+                raise Exception("Error: unauthorized. Try calling authenticate() with valid credentials")
+        else:
+            return func(*args, **kwargs)
+    return wrapper
+    
+
+@check_auth
+def download_url(url):
+    """Downloads track/album at provided URL to local directory"""
+    qobuz.handle_url(url)
+    url_type, item_id = get_url_info(url)
+    meta = qobuz.client.get_album_meta(item_id)
+
+    attr = {
+        "artist": meta["artist"]["name"],
+        "album": meta["title"],
+        "year": meta["release_date_original"].split("-")[0],
+    }
+    
+    path = os.path.join(qobuz.directory, os.path.normpath(qobuz.folder_format.format(**attr)))
+
+    return (path, attr["artist"], attr["album"], attr["year"])
+
+
+@check_auth
 def download_album(album_name, artist, dl_path):
     query = f"{artist} - {album_name}"
     search_results = qobuz.search_by_type(query, "album", limit=10)

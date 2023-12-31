@@ -2,52 +2,67 @@ import queue
 import os
 from metadata import Album, Track
 import re
-import asyncio
-import justpy as jp
 import shutil
 import logging
+import threading
+import time
 
 from qobuz_downloader import download_url
 
 
-logger = logging.getLogger(__name__)
-
 working_dir = "stage"
 dest_dir = "/vault/media/audio/Music"
 
-class Task_Runner:
-    def __init__(self):
-        self.jobs = queue.Queue()
-        asyncio.create_task(self.run())
+ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
-    async def run(self):
+
+class Task_Runner:
+    def __init__(self, msg_queue):
+        global logger
+        logger = logging.getLogger(__name__)
+        logger.addFilter(self.log_handler)
+        for key in logger.root.manager.loggerDict.keys():
+            if "qobuz" in key:
+                logging.getLogger(key).addFilter(self.log_handler)
+
+        self.jobs = queue.Queue()
+        self.msg_queue = msg_queue
+        #asyncio.create_task(self.run())
+        threading.Thread(target=self.run).start()
+
+    def run(self):
         while True:
             if not self.jobs.empty():
-                await process(*self.jobs.get())
+                process(self.jobs.get())
             else:
-                await asyncio.sleep(1)
+                time.sleep(1)
+
+    def log_handler(self, record):
+        msgs = record.msg.split("\n")
+        for msg in msgs:
+            msg = ansi_escape.sub('', msg)
+            self.msg_queue.put(msg)
+            #return True
 
 
-# TODO: run qobuz-dl in a separate thread, have its logger push to a queue
-# Have main thread aync pull from queue and display
 
-
-async def process(url, web_page):
-
-    #web_page.logs.add_component(jp.P(text=f'Printing {url} idx: {_}'), 0)
-    #await web_page.logs.update()
+def process(url):
     logger.info(f"Processing {url}")
 
     # download album with qobuz
     local_path, artist, album, year = download_url(url)
-    print(local_path)
 
+    logger.info(f"Sanitizing tags at path: {local_path}")
     new_album_name = sanitize(local_path)
     if new_album_name:
+        logger.info(f"Santized album name: {new_album_name}")
         album = new_album_name
 
     remote_path = os.path.join(dest_dir,artist,f"{year} - {album}")
-    #shutil.move(local_path, remote_path)
+
+    logger.info(f"Moving files from temp directory to {dest_dir}")
+    logger.info(f"({local_path} -> {remote_path}")
+    shutil.move(local_path, remote_path)
 
 
 def sanitize(album_path):

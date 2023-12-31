@@ -3,6 +3,8 @@
 import logging
 import justpy as jp
 from dotenv import dotenv_values
+import queue
+import asyncio
 
 
 from qobuz_downloader import authenticate, download_url
@@ -35,8 +37,12 @@ status_classes = "rounded"
 
 def start_taskrunner():
     # JustPy event loop needs to exist before initializing Task_Runner
+    msg_queue = queue.Queue()
     global taskrunner
-    taskrunner = Task_Runner()
+    taskrunner = Task_Runner(msg_queue)
+
+    jp.run_task(write_logs(msg_queue))
+
 
 logs = jp.Div(classes='text-lg border m-2 p-2 overflow-auto h-64', delete_flag=False)
 
@@ -77,13 +83,9 @@ def web_ui(request):
     #input_label.for_component = url_entry.input_field
     jp.Button(a=url_entry, text="Download", click=process_url, classes="w-64 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full")
 
-
     # Logs
-    #wp.logs = jp.Div(classes='text-lg border m-2 p-2 overflow-auto h-64', a=wp, delete_flag=False)
     wp.add(logs)
     logs.add_page(wp)
-    #wp.logs.add(jp.P(text='No button clicked yet'))
-
 
     return wp
 
@@ -92,8 +94,7 @@ async def process_url(self, msg):
     if not (url := self.a.input_field.value):
         return
     self.a.input_field.value = ""
-    print(f"Sending {url} to process queue")
-    taskrunner.jobs.put((url, self.a.a))
+    taskrunner.jobs.put(url)
 
 
 def login(self, msg):
@@ -115,22 +116,20 @@ def login(self, msg):
     self.a.pw_input.value = ""
 
 
-import asyncio
-def on_log(record):
-    msgs = record.msg.split("\n")
-    for m in msgs:
-        logs.add_component(jp.P(text=m), 0)
-        #jp.run_task(logs.update())
-        await logs.update()
-    return True
+
+async def write_logs(msg_queue):
+    while True:
+        if not msg_queue.empty():
+            msg = msg_queue.get()
+            print(f"\\\\\\\\\\Printing to webconsole: {msg}") # DEBUG
+            logs.add_component(jp.P(text=msg))
+            jp.run_task(logs.update())
+        else:
+            await asyncio.sleep(0.1)
 
 
 if __name__ == "__main__":
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
-    #root_logger.addFilter(on_log)
-    for key in root_logger.manager.loggerDict.keys():
-        if "qobuz" in key:
-            logging.getLogger(key).addFilter(on_log)
-    logging.getLogger("task_runner").addFilter(on_log)
+
     jp.justpy(web_ui, startup=start_taskrunner)

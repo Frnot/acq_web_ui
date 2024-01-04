@@ -75,10 +75,12 @@ def sanitize(album_path):
 
     for track in album.tracks:
         if new_album_name:
-            track.album = new_album_name
+            track.album_name = new_album_name
+            logger.info(f"{track.filepath} new album: {new_album_name}")
 
         if new_title := clean(track.title, regex_list):
             track.title = new_title
+            logger.info(f"{track.filepath} new title: {new_title}")
 
         if "," in track.artists:
             track.artists = track.artists.split(", ")

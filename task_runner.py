@@ -50,10 +50,16 @@ def process(url):
     logger.info(f"Processing {url}")
 
     # download album with qobuz
-    local_path, artist, album, year = download_url(url)
+    local_path, attr = download_url(url)
+    
+    album = attr["album"]
+    artist = attr["artist"]
+    year = attr["year"]
+    if "title" in attr:
+        title = attr["title"]
 
     logger.info(f"Sanitizing tags at path: {local_path}")
-    new_album_name = sanitize(local_path)
+    new_album_name = sanitize(local_path, title)
     if new_album_name:
         logger.info(f"Santized album name: {new_album_name}")
         album = new_album_name
@@ -65,13 +71,20 @@ def process(url):
     shutil.move(local_path, remote_path)
 
 
-def sanitize(album_path):
+def sanitize(album_path, single_name=None):
     for file in os.scandir(album_path):
         file_path = os.path.join(os.getcwd(), file.path)
         track = Track(file_path)
         album = track.album
 
-    new_album_name = clean(album.name, regex_list)
+    if single_name:
+        track.tracknumber = "01"
+
+    if single_name:
+        if not (new_album_name := clean(single_name, regex_list)):
+            new_album_name = single_name
+    else:
+        new_album_name = clean(album.name, regex_list)
 
     for track in album.tracks:
         if new_album_name:

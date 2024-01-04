@@ -58,17 +58,27 @@ def download_url(url):
     """Downloads track/album at provided URL to local directory"""
     qobuz.handle_url(url)
     url_type, item_id = get_url_info(url)
-    meta = qobuz.client.get_album_meta(item_id)
 
-    attr = {
-        "artist": meta["artist"]["name"],
-        "album": meta["title"],
-        "year": meta["release_date_original"].split("-")[0],
-    }
-    
-    path = os.path.join(qobuz.directory, os.path.normpath(qobuz.folder_format.format(**attr)))
+    if url_type == "track":
+        meta = qobuz.client.get_track_meta(item_id)
+        attr = {
+            "artist": meta["performer"]["name"],
+            "album": meta["album"]["title"],
+            "year": meta["release_date_original"].split("-")[0],
+            "title" : meta["title"],
+        }
+        path = os.path.join(qobuz.directory, os.path.normpath(qobuz.folder_format.format(**attr)))
 
-    return (path, attr["artist"], attr["album"], attr["year"])
+    else: # album
+        meta = qobuz.client.get_album_meta(item_id)
+        attr = {
+            "artist": meta["artist"]["name"],
+            "album": meta["title"],
+            "year": meta["release_date_original"].split("-")[0],
+        }
+        path = os.path.join(qobuz.directory, os.path.normpath(qobuz.folder_format.format(**attr)))
+
+    return (path, attr)
 
 
 @check_auth

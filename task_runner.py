@@ -56,7 +56,11 @@ def process(url):
     logger.info(f"Processing {url}")
 
     # download album with qobuz
-    local_path, attr = download_url(url)
+    try:
+        local_path, attr = download_url(url)
+    except:
+        logger.error(f"URL: {url} invalid.")
+        return
     
     album = attr["album"]
     artist = attr["artist"]

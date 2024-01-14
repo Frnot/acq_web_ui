@@ -6,6 +6,7 @@ import shutil
 import logging
 import threading
 import time
+import traceback
 
 from qobuz_downloader import download_url
 
@@ -33,7 +34,12 @@ class Task_Runner:
     def run(self):
         while True:
             if not self.jobs.empty():
-                process(self.jobs.get())
+                try:
+                    process(self.jobs.get())
+                except Exception:
+                    logger.error(traceback.format_exc())
+                    logger.error()
+                    logger.error()
             else:
                 time.sleep(1)
 
@@ -57,9 +63,14 @@ def process(url):
     year = attr["year"]
     if "title" in attr:
         title = attr["title"]
+    else:
+        title = None
 
     logger.info(f"Sanitizing tags at path: {local_path}")
-    new_album_name = sanitize(local_path, title)
+    if title:
+        new_album_name = sanitize(local_path, title)
+    else:
+        new_album_name = sanitize(local_path, album)
     if new_album_name:
         logger.info(f"Santized album name: {new_album_name}")
         album = new_album_name

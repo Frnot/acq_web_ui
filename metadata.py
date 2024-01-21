@@ -23,13 +23,13 @@ class Album:
 class Track:
     def __init__(self, filepath):
         self.filepath = filepath
-        self.ftag = music_tag.load_file(filepath)
         self.isflac = filepath.lower().endswith(".flac")
         self.ismp3 = filepath.lower().endswith(".mp3")
 
         if not self.isflac or self.ismp3:
             raise Exception("Unsupported file type")
 
+        self.ftag = music_tag.load_file(filepath)
         self.title = self.ftag["title"].value
         self.tracknumber = self.ftag["tracknumber"].value
         self.album_name = self.ftag["album"].value

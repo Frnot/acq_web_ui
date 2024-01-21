@@ -91,8 +91,11 @@ def process(url):
 def sanitize(album_path, single_name=None):
     for file in os.scandir(album_path):
         file_path = os.path.join(os.getcwd(), file.path)
-        track = Track(file_path)
-        album = track.album
+        if not (file_path.endswith(".flac") or file_path.endswith(".mp3")):
+            os.remove(file_path)
+        else:
+            track = Track(file_path)
+            album = track.album
 
     if single_name:
         track.tracknumber = "01"

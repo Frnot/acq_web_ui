@@ -7,6 +7,7 @@ import logging
 import threading
 import time
 import traceback
+from pathvalidate import sanitize_filepath
 
 from qobuz_downloader import download_url
 
@@ -38,8 +39,7 @@ class Task_Runner:
                     process(self.jobs.get())
                 except Exception:
                     logger.error(traceback.format_exc())
-                    logger.error()
-                    logger.error()
+                    logger.error("")
             else:
                 time.sleep(1)
 
@@ -58,6 +58,7 @@ def process(url):
     # download album with qobuz
     try:
         local_path, attr = download_url(url)
+        local_path = sanitize_filepath(local_path)
     except:
         logger.error(f"URL: {url} invalid.")
         return
@@ -74,7 +75,7 @@ def process(url):
     if title:
         new_album_name = sanitize(local_path, title)
     else:
-        new_album_name = sanitize(local_path, album)
+        new_album_name = sanitize(local_path)
     if new_album_name:
         logger.info(f"Santized album name: {new_album_name}")
         album = new_album_name
@@ -84,6 +85,7 @@ def process(url):
     logger.info(f"Moving files from temp directory to {dest_dir}")
     logger.info(f"({local_path} -> {remote_path}")
     shutil.move(local_path, remote_path)
+    os.rmdir(os.path.dirname(local_path))
 
 
 def sanitize(album_path, single_name=None):

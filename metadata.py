@@ -79,10 +79,11 @@ class Track:
             return Album(self.album_name)
         
     def generate_filename(self):
+        tracknumber = f"0{self.tracknumber}" if self.tracknumber < 10 else self.tracknumber
         if self.isflac:
-            return f"{self.tracknumber} - {self.title}.flac"
+            return f"{tracknumber} - {self.title}.flac"
         elif self.ismp3:
-            return f"{self.tracknumber} - {self.title}.mp3"
+            return f"{tracknumber} - {self.title}.mp3"
         
     def set_artists(self, artists):
         self.ftag["artist"] = artists

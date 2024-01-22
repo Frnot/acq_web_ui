@@ -58,10 +58,13 @@ def process(url):
     # download album with qobuz
     try:
         local_path, attr = download_url(url)
-        local_path = sanitize_filepath(local_path)
     except:
         logger.error(f"URL: {url} invalid.")
         return
+
+    if not os.path.isdir(local_path):
+        local_path = f"{local_path} ({attr['version']})"
+    local_path = sanitize_filepath(local_path)
     
     album = attr["album"]
     artist = attr["artist"]

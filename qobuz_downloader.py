@@ -75,6 +75,7 @@ def download_url(url):
             "artist": meta["artist"]["name"],
             "album": meta["title"],
             "year": meta["release_date_original"].split("-")[0],
+            "version": meta["version"],
         }
         path = os.path.join(qobuz.directory, os.path.normpath(qobuz.folder_format.format(**attr)))
 

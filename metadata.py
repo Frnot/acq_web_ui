@@ -100,5 +100,6 @@ class Track:
         else:
             comments.append(new_comment)
 
+        self.comments = comments
         self.ftag["comment"] = comments
         self.ftag.save()

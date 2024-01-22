@@ -98,6 +98,7 @@ def sanitize(album_path, single_name=None):
             os.remove(file_path)
         else:
             track = Track(file_path)
+            track.append_comment("Sourced from Qobuz")
             album = track.album
 
     if single_name:

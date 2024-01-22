@@ -62,7 +62,7 @@ def process(url):
         logger.error(f"URL: {url} invalid.")
         return
 
-    if not os.path.isdir(local_path):
+    if not os.path.isdir(local_path) and attr['version']:
         local_path = f"{local_path} ({attr['version']})"
     local_path = sanitize_filepath(local_path)
     

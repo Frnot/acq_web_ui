@@ -83,7 +83,7 @@ def process(url):
         logger.info(f"Santized album name: {new_album_name}")
         album = new_album_name
 
-    remote_path = os.path.join(dest_dir,artist,f"{year} - {album}")
+    remote_path = os.path.join(dest_dir,artist,f"{year} - {album}").strip()
 
     logger.info(f"Moving files from temp directory to {dest_dir}")
     logger.info(f"({local_path} -> {remote_path}")

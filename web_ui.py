@@ -2,7 +2,7 @@
 
 import logging
 import justpy as jp
-from dotenv import dotenv_values
+from dotenv import dotenv_values, set_key
 import queue
 import asyncio
 
@@ -105,7 +105,8 @@ def login(self, msg):
         self.a.status.classes=status_classes+" bg-green-200"
         self.a.default_email = lem
         self.a.default_password = lpwd
-        #TODO: save new values to .env
+        set_key(dotenv_path=".env", key_to_set="email", value_to_set=lem)
+        set_key(dotenv_path=".env", key_to_set="password", value_to_set=lpwd)
     else:
         self.a.status.text="Could not log in to Qobuz. Please update credentials"
         self.a.status.classes=status_classes+" bg-red-300"
